@@ -2,28 +2,33 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
-const PARTICLE_COUNT = 100;
 
-const Particle = (x, y, speed) => ({ x, y, speed, angle: Math.random() * Math.PI * 2 });
+const Particle = (x, y, speed, size) => ({ x, y, speed, size, angle: Math.random() * Math.PI * 2 });
 
 const Index = () => {
   const [particles, setParticles] = useState([]);
+  const [particleCount, setParticleCount] = useState(100);
+  const [minSpeed, setMinSpeed] = useState(0.5);
   const [maxSpeed, setMaxSpeed] = useState(2);
+  const [minSize, setMinSize] = useState(1);
+  const [maxSize, setMaxSize] = useState(5);
   const canvasRef = useRef(null);
 
   useEffect(() => {
     initParticles();
-  }, []);
+  }, [particleCount, minSpeed, maxSpeed, minSize, maxSize]);
 
   const initParticles = () => {
-    const newParticles = Array.from({ length: PARTICLE_COUNT }, () =>
+    const newParticles = Array.from({ length: particleCount }, () =>
       Particle(
         Math.random() * CANVAS_WIDTH,
         Math.random() * CANVAS_HEIGHT,
-        Math.random() * maxSpeed
+        minSpeed + Math.random() * (maxSpeed - minSpeed),
+        minSize + Math.random() * (maxSize - minSize)
       )
     );
     setParticles(newParticles);
@@ -48,7 +53,7 @@ const Index = () => {
         if (particle.y > CANVAS_HEIGHT) particle.y = 0;
 
         ctx.beginPath();
-        ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fill();
       });
 
@@ -62,12 +67,19 @@ const Index = () => {
     };
   }, [particles]);
 
-  const handleSpeedChange = (newSpeed) => {
-    setMaxSpeed(newSpeed[0]);
-    setParticles(prevParticles =>
-      prevParticles.map(p => ({ ...p, speed: Math.random() * newSpeed[0] }))
-    );
-  };
+  const SliderControl = ({ label, value, onChange, min, max, step }) => (
+    <div className="flex flex-col space-y-2">
+      <Label>{label}: {value.toFixed(1)}</Label>
+      <Slider
+        value={[value]}
+        onValueChange={([newValue]) => onChange(newValue)}
+        min={min}
+        max={max}
+        step={step}
+        className="w-full"
+      />
+    </div>
+  );
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -82,16 +94,47 @@ const Index = () => {
             height={CANVAS_HEIGHT}
             className="bg-gray-900 rounded-lg mx-auto"
           />
-          <div className="flex items-center space-x-4">
-            <span className="text-sm font-medium">Max Speed:</span>
-            <Slider
-              value={[maxSpeed]}
-              onValueChange={handleSpeedChange}
+          <div className="grid grid-cols-2 gap-4">
+            <SliderControl
+              label="Particle Count"
+              value={particleCount}
+              onChange={setParticleCount}
+              min={10}
+              max={500}
+              step={10}
+            />
+            <SliderControl
+              label="Min Speed"
+              value={minSpeed}
+              onChange={setMinSpeed}
+              min={0.1}
+              max={maxSpeed}
+              step={0.1}
+            />
+            <SliderControl
+              label="Max Speed"
+              value={maxSpeed}
+              onChange={setMaxSpeed}
+              min={minSpeed}
               max={10}
               step={0.1}
-              className="w-64"
             />
-            <span className="text-sm">{maxSpeed.toFixed(1)}</span>
+            <SliderControl
+              label="Min Size"
+              value={minSize}
+              onChange={setMinSize}
+              min={1}
+              max={maxSize}
+              step={0.5}
+            />
+            <SliderControl
+              label="Max Size"
+              value={maxSize}
+              onChange={setMaxSize}
+              min={minSize}
+              max={10}
+              step={0.5}
+            />
           </div>
           <Button onClick={initParticles} className="w-full">
             Reset Particles
