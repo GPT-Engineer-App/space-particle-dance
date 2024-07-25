@@ -8,19 +8,24 @@ const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 
 const Particle = (x, y, speed, size) => ({ x, y, speed, size, angle: Math.random() * Math.PI * 2 });
+const Rocket = (x, y, speed) => ({ x, y, speed, angle: Math.random() * Math.PI * 2 });
 
 const Index = () => {
   const [particles, setParticles] = useState([]);
+  const [rockets, setRockets] = useState([]);
   const [particleCount, setParticleCount] = useState(100);
   const [minSpeed, setMinSpeed] = useState(0.5);
   const [maxSpeed, setMaxSpeed] = useState(2);
   const [minSize, setMinSize] = useState(1);
   const [maxSize, setMaxSize] = useState(5);
+  const [rocketCount, setRocketCount] = useState(3);
+  const [rocketSpeed, setRocketSpeed] = useState(5);
   const canvasRef = useRef(null);
 
   useEffect(() => {
     initParticles();
-  }, [particleCount, minSpeed, maxSpeed, minSize, maxSize]);
+    initRockets();
+  }, [particleCount, minSpeed, maxSpeed, minSize, maxSize, rocketCount, rocketSpeed]);
 
   const initParticles = () => {
     const newParticles = Array.from({ length: particleCount }, () =>
@@ -34,6 +39,17 @@ const Index = () => {
     setParticles(newParticles);
   };
 
+  const initRockets = () => {
+    const newRockets = Array.from({ length: rocketCount }, () =>
+      Rocket(
+        Math.random() * CANVAS_WIDTH,
+        Math.random() * CANVAS_HEIGHT,
+        rocketSpeed
+      )
+    );
+    setRockets(newRockets);
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -41,8 +57,9 @@ const Index = () => {
 
     const render = () => {
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      
+      // Draw particles
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-
       particles.forEach(particle => {
         particle.x += Math.cos(particle.angle) * particle.speed;
         particle.y += Math.sin(particle.angle) * particle.speed;
@@ -57,6 +74,30 @@ const Index = () => {
         ctx.fill();
       });
 
+      // Draw rockets
+      ctx.fillStyle = 'red';
+      rockets.forEach(rocket => {
+        rocket.x += Math.cos(rocket.angle) * rocket.speed;
+        rocket.y += Math.sin(rocket.angle) * rocket.speed;
+
+        if (rocket.x < 0 || rocket.x > CANVAS_WIDTH || rocket.y < 0 || rocket.y > CANVAS_HEIGHT) {
+          rocket.x = Math.random() * CANVAS_WIDTH;
+          rocket.y = Math.random() * CANVAS_HEIGHT;
+          rocket.angle = Math.random() * Math.PI * 2;
+        }
+
+        ctx.save();
+        ctx.translate(rocket.x, rocket.y);
+        ctx.rotate(rocket.angle);
+        ctx.beginPath();
+        ctx.moveTo(10, 0);
+        ctx.lineTo(-10, 5);
+        ctx.lineTo(-10, -5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      });
+
       animationFrameId = window.requestAnimationFrame(render);
     };
 
@@ -65,7 +106,7 @@ const Index = () => {
     return () => {
       window.cancelAnimationFrame(animationFrameId);
     };
-  }, [particles]);
+  }, [particles, rockets]);
 
   const SliderControl = ({ label, value, onChange, min, max, step }) => (
     <div className="flex flex-col space-y-2">
@@ -84,7 +125,7 @@ const Index = () => {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <h2 className="text-2xl font-bold text-center">Particle Motion Visualizer</h2>
+        <h2 className="text-2xl font-bold text-center">Particle and Rocket Simulator</h2>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -135,9 +176,25 @@ const Index = () => {
               max={10}
               step={0.5}
             />
+            <SliderControl
+              label="Rocket Count"
+              value={rocketCount}
+              onChange={setRocketCount}
+              min={1}
+              max={10}
+              step={1}
+            />
+            <SliderControl
+              label="Rocket Speed"
+              value={rocketSpeed}
+              onChange={setRocketSpeed}
+              min={1}
+              max={20}
+              step={0.5}
+            />
           </div>
-          <Button onClick={initParticles} className="w-full">
-            Reset Particles
+          <Button onClick={() => { initParticles(); initRockets(); }} className="w-full">
+            Reset Simulation
           </Button>
         </div>
       </CardContent>
